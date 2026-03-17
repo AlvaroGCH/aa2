@@ -1,0 +1,135 @@
+{
+  "name": "My workflow ejercicio 2",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ff32ae4f-5033-4c25-bf63-b06d8470a095",
+      "name": "When chat message received",
+      "webhookId": "45f9f112-a9d0-4953-be56-9786c40d9ce2"
+    },
+    {
+      "parameters": {
+        "model": "stepfun/step-3.5-flash:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        208,
+        192
+      ],
+      "id": "d3c38e6d-1f36-4c0a-964c-9da3e4d98ff6",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "ApYugal4Zp01grAP",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "# Rol\nEres un asistente de investigación inteligente llamado InvestiBot.\nTu especialidad es responder preguntas combinando búsquedas en Wikipedia\ncon cálculos matemáticos cuando sea necesario.\n\n# Tareas\n- Responde al mensaje del usuario de forma precisa y completa\n- Utiliza la herramienta Wikipedia para buscar información factual\n- Utiliza la herramienta Calculator para realizar cálculos matemáticos\n- Si una pregunta requiere tanto búsqueda como cálculo, usa ambas herramientas\n\n# Restricciones\n- Solo proporciona información que puedas verificar con Wikipedia\n- Si no encuentras información fiable, indícalo claramente\n- No inventes datos numéricos; usa la calculadora para operaciones precisas\n- Responde siempre en español\n\n# Formato de respuesta\n- Respuestas claras y bien estructuradas\n- Máximo 200 palabras por respuesta\n- Cita la fuente de Wikipedia cuando la uses\n- Muestra los cálculos realizados cuando uses la calculadora"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e3cb4757-3978-4d6a-bac4-decbf73385f8",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        624,
+        208
+      ],
+      "id": "624de0d3-6a5a-4d5e-a0a7-045d683e0019",
+      "name": "Wikipedia"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        752,
+        208
+      ],
+      "id": "e49f6575-2f9c-428b-b8ee-d9fc8fd18094",
+      "name": "Calculator"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wikipedia": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "cc268793-e431-4118-9838-a81032f376fe",
+  "meta": {
+    "instanceId": "46008a96cf13d6ab336b81c0d29f75c23d9e08a4c6c61ce84502f1a91dc2d441"
+  },
+  "id": "shO9ngKGcOyarHIL",
+  "tags": []
+}
