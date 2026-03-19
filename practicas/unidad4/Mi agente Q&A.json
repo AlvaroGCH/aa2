@@ -1,0 +1,211 @@
+{
+  "name": "Mi agente Q&A",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "stepfun/step-3.5-flash:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        176,
+        208
+      ],
+      "id": "b77a65da-466e-487d-bc5b-c3fad226a408",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "qOoxAAJqmiwwqSRq",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "# Rol\nEres un asistente personal inteligente con acceso a Wikipedia y capacidades de cálculo matemático.\n\n# Tareas\n- Responder preguntas generales usando Wikipedia cuando necesites datos factuales\n- Resolver cálculos matemáticos usando la calculadora\n- Combinar ambas capacidades cuando sea necesario\n- Mantener conversaciones coherentes recordando el contexto previo\n\n# Herramientas\n- Usa Wikipedia para buscar información factual y conocimiento general\n- Usa Calculator para operaciones matemáticas\n- Siempre cita la fuente cuando uses Wikipedia\n\n# Restricciones\n- Solo usa Wikipedia para datos verificables\n- Solo usa Calculator para operaciones matemáticas válidas\n- No inventes información, usa las herramientas disponibles\n\n# Formato\n- Respuestas claras y estructuradas\n- Cita las fuentes cuando uses Wikipedia\n- Muestra los cálculos realizados cuando uses Calculator"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "ef1d2abb-e3b8-40c2-aaed-0de906e35178",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        560,
+        256
+      ],
+      "id": "ebd01336-0d15-4a3e-afab-0e0d5e443a8d",
+      "name": "Wikipedia"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        736,
+        256
+      ],
+      "id": "7800b45e-3120-4bf2-b880-c4000c8d9ce7",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        16,
+        0
+      ],
+      "id": "0afa4c1c-cc44-45c1-96bb-6fd00d4f333d",
+      "name": "Telegram Trigger",
+      "webhookId": "e4bf3911-65a5-4347-ba09-deb13a9c2ac2",
+      "credentials": {
+        "telegramApi": {
+          "id": "A35z8ogUOSFar8SX",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        0
+      ],
+      "id": "b89b6407-28dd-46eb-be5b-2dea5fecd2f1",
+      "name": "Send a text message",
+      "webhookId": "38d530b2-a57e-4eb8-bf0f-6a179b37e4a2",
+      "credentials": {
+        "telegramApi": {
+          "id": "A35z8ogUOSFar8SX",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        272,
+        256
+      ],
+      "id": "115eabd2-ca7e-48fc-aace-31bc0b3ab3da",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "UmPY8XFAubjIknUY",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wikipedia": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "940168ba-922a-40e6-b1aa-4cc4bee3d748",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f35d86f13d2ad7ce7d2052f1a734d394a509c8ecf5f2a7c2db714a718bce60b3"
+  },
+  "id": "NlrI4JBRNpYCJBTC",
+  "tags": []
+}
