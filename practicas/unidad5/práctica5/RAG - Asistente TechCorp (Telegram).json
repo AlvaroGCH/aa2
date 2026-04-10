@@ -1,0 +1,242 @@
+{
+  "name": "RAG - Asistente TechCorp (Telegram)",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "# Rol\nEres el asistente virtual de TechCorp, especializado en responder preguntas sobre la documentación interna de la empresa.\n\n# Tareas\n- Buscar SIEMPRE en la documentación interna antes de responder\n- Proporcionar respuestas precisas basadas en los documentos de la empresa\n- Citar la fuente del documento cuando sea posible\n\n# Restricciones\n- SOLO responder con información que esté en la documentación de la empresa\n- Si la información no está en los documentos, responder: \"No dispongo de información sobre ese tema en la documentación de la empresa. Te recomiendo contactar con el departamento correspondiente.\"\n- NO inventar políticas, procedimientos ni datos que no estén en los documentos\n- NO responder preguntas que no estén relacionadas con la empresa\n\n# Formato\n- Respuestas claras y concisas\n- Usar viñetas cuando sea apropiado\n- Indicar el documento fuente cuando sea posible\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        192,
+        0
+      ],
+      "id": "c5110279-4ff4-4931-b09a-197271097777",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "10dfffa2-735f-4274-add1-28994c644e99",
+      "name": "Telegram Trigger",
+      "webhookId": "e4bf3911-65a5-4347-ba09-deb13a9c2ac2",
+      "credentials": {
+        "telegramApi": {
+          "id": "CVCkiqnXaEbc0236",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        544,
+        0
+      ],
+      "id": "aa44d912-efc7-4814-9de3-dc1164428343",
+      "name": "Send a text message",
+      "webhookId": "38d530b2-a57e-4eb8-bf0f-6a179b37e4a2",
+      "credentials": {
+        "telegramApi": {
+          "id": "CVCkiqnXaEbc0236",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        256
+      ],
+      "id": "1ebb19a5-255f-43d6-9bae-4f1672d05c76",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "cXUS1VmiXnVj4yL2",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Busca información en la documentación interna de la empresa TechCorp. Usa esta herramienta para responder preguntas sobre políticas de RRHH, procedimientos técnicos, soporte, vacaciones, teletrabajo y cualquier otra consulta sobre la empresa.\n",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "empresa-docs",
+          "mode": "list",
+          "cachedResultName": "empresa-docs"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        256
+      ],
+      "id": "05fa550b-a078-4002-82a7-d133850714d3",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "EeGOWIigxAQuyBPp",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-ada-002",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        432,
+        464
+      ],
+      "id": "ab47b325-d58e-4382-8fa4-951506527194",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "v47AjRYZHp0ZJAai",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        64,
+        208
+      ],
+      "id": "59194f48-1d39-4591-b7a2-519d0228b349",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "v47AjRYZHp0ZJAai",
+          "name": "OpenAI account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2c2d3f22-d575-4740-a67d-f6f2396e37f5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53b18860251a7d2eb6a498ede9daade9306de308e992326c9b2abe7bc67a5ce6"
+  },
+  "id": "alvEyFigEaG1tSS5",
+  "tags": []
+}
