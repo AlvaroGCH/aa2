@@ -2,7 +2,7 @@
 
 Sistema de asistente inteligente basado en **Retrieval-Augmented Generation (RAG)** que responde preguntas sobre un Trabajo Fin de Grado real. El conocimiento está centralizado en una base vectorial (Pinecone) y se expone a través de **dos interfaces independientes**: un bot de Telegram gestionado por un agente propio en n8n (GPT-4o-mini), y Claude Desktop conectado mediante un servidor **Model Context Protocol (MCP)** también implementado en n8n.
 
-Proyecto final de la asignatura **Aprendizaje Automático 2** (grado en Ingeniería de Datos e Inteligencia Artificial).
+Proyecto final de la asignatura **Aprendizaje Automático 2**.
 
 ---
 
@@ -385,5 +385,4 @@ El sistema depende de n8n Cloud y Claude Desktop. Una mejora sería alojar n8n e
 ## Autor
 
 **Álvaro García-Calderón Huerta**
-Grado en Ingeniería de Datos e Inteligencia Artificial
 Aprendizaje Automático 2 — Curso 2025/2026
