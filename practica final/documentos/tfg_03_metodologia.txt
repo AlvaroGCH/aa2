@@ -1,0 +1,188 @@
+TFG - Capítulo 3: Metodología
+Título: Desarrollo de software para extracción automática de datos de facturas empresariales
+Autor: Álvaro García-Calderón Huerta
+
+3. METODOLOGÍA
+
+Este trabajo se plantea como un proceso iterativo e incremental, usando un pipeline de procesamiento de facturas compuesto por cinco fases principales de las cuales se mencionan y se explican más adelante. Cada iteración permite ajustar componentes del sistema (por ejemplo, cambiar parámetros del OCR o modificar el prompt del modelo de lenguaje) en función de los resultados obtenidos, con el objetivo de mejorar la calidad de la extracción y robustez del sistema.
+
+3.1 Enfoque de desarrollo y pipeline principal
+
+Como el desarrollo que se seguirá es iterativo e incremental, significa que el sistema no se diseña por completo desde el principio, sino que se construye y refina por módulos, verificando en cada paso que las decisiones tomadas tienen sentido en la práctica.
+
+Cada iteración del desarrollo se estructurará en las siguientes fases genéricas:
+- Diseñar el módulo o etapa del pipeline.
+- Implementarlo.
+- Probarlo con facturas de ejemplo.
+- Revisar de resultados.
+- Realizar ajustes o refactorizaciones necesarias.
+
+De esta forma se podrán detectar cuellos de botella y reaccionar sin tener que rehacer el sistema entero.
+
+El pipeline principal de procesamiento de facturas será el siguiente:
+1. Ingesta de datos.
+2. OCR
+3. Postprocesado del texto.
+4. Extracción semántica con LM.
+5. Evaluación con métricas objetivas.
+
+3.2 Tecnologías elegidas
+
+Para las tecnologías que se emplearán se rigen por los siguientes criterios:
+- Claridad: se priorizarán herramientas que sean razonablemente fáciles de entender y explicar.
+- Viabilidad: se preferirán soluciones que se puedan ejecutar en un entorno local o con un coste asumible para un estudiante, no obstante, no tiene por qué afectar a la calidad del sistema, simplemente se optarán por proyectos open source o APIs con precios razonables.
+- Experimentación: se seleccionarán tecnologías que cambiar parámetros sin cambiar toda la arquitectura, para poder justificar las decisiones con datos.
+
+3.2.1 Lenguaje de programación
+
+Se ha utilizado Python 3.13 como lenguaje principal. La elección se debe a su amplia adopción en el ámbito de procesamientos de datos y la inteligencia artificial, a la disponibilidad de librerías especializadas para OCR y acceso a modelos de lenguaje, y también por su sintaxis clara que facilita la comprensión y lectura del código.
+
+3.2.2 OCR
+
+Para OCR, se utilizará Tesseract, en Python la librería pytesseract. Se trata de un motor de OCR de código abierto mantenido originalmente por Google, gratuito y sin límites de uso. Se optó por usar esta herramienta frente a alternativas cloud como Google Vision API, AWS Textract o Azure Document Intelligence porque permite la ejecución local sin dependencia de servicios externos ni costes por llamadas a la API.
+
+3.2.3 Modelos de lenguaje
+
+Se han evaluado tres modelos de lenguaje de tres proveedores distintos, accesibles mediante sus respectivas APIs y SDKs oficiales:
+- Claude Sonnet 4.6 (Anthropic, 2026)
+- GPT-4o (OpenAI, 2024)
+- Gemini 2.5 Flash (Google, 2025)
+
+Los tres modelos se configuraron con temperatura 0.0 para obtener resultados deterministas y reproducibles, de esta manera hacemos que el LLM sea lo más objetivo posible y evitamos las famosas alucinaciones, que son aquel contenido generado que carece de sentido en el contexto dado.
+
+La decisión de usar estos tres modelos en lugar de uno es para cumplir con uno de los objetivos del proyecto, que es comparar y analizar resultados con distintos proveedores.
+
+Además de dichos extractores basados en LLM, se implementó un extractor basado en expresiones regulares llamado regex que no utiliza ningún modelo de lenguaje. Su función no es ofrecer una alternativa funcional, sino servir como base experimental que permita cuantificar objetivamente la mejora que aporta la comprensión semántica de los LLMs frente a un enfoque tradicional como lo es regex.
+
+3.2.4 Procesamiento de documentos
+
+La conversión de PDFs a imágenes se realiza mediante la librería pdf2image que internamente utiliza Poppler como motor de renderizado. Las imágenes se gestionan con la librería Pillow para procesamiento de imágenes.
+
+3.2.5 Almacenamiento y formato de salida
+
+Los resultados se almacenan en archivos JSON individuales (uno por cada factura procesada), en lugar de una base de datos. Esta decisión fue tomada por la legibilidad del formato, ya que es directo y fácil de visualizar. No obstante, si el proyecto lo requiere en algún futuro esos JSONs podrían servir para inyectarlos en una base de datos como MongoDB por ejemplo.
+
+3.2.6 Evaluación y visualización
+
+Para la generación de gráficas comparativas se ha utilizado la librería Matplotlib junto Numpy para el cálculo numérico. Los scripts de evaluación comparan automáticamente los resultados extraídos con un ground truth anotado manualmente y calculan métricas de accuracy, precisión, recall y F1-Score por campo y por extractor.
+
+3.3 Conjuntos de datos y preparación
+
+La evaluación del sistema se ha realizado con un conjunto de 121 facturas reales proporcionadas por dos empresas colaboradoras con este TFG.
+
+3.3.1 Conjuntos de datos
+
+Los datos utilizados en la evaluación del sistema proceden de dos empresas colaboradoras pertenecientes a sectores distintos, lo que permite medir el rendimiento del sistema en contextos heterogéneos. A continuación, se describe cada uno de los dos conjuntos.
+
+Empresa 1 - GONJARA S.L. (Hostelería)
+
+La primera empresa es un bar-restaurante que genera facturas con proveedores habituales del sector. El dataset incluye 54 facturas de 15 proveedores distintos.
+
+Todas las facturas de esta empresa son PDFs generados digitalmente, lo que implica texto incrustado de alta calidad y formatos predecibles dentro de cada proveedor. Mercadona, por ejemplo, utiliza siempre el mismo diseño para sus facturas simplificadas, lo que hace que el OCR funcione de forma consistente. Iberdrola, por otro lado genera facturas de hasta 4 páginas con una estructura más compleja que incluye múltiples conceptos y varios tipos de IVA.
+
+Empresa 2 - IAG (Ingeniería)
+
+La segunda empresa es una consultora de ingeniería acústica, y su dataset supone un desafío considerablemente mayor. Incluye 67 facturas de 46 proveedores distintos con una variedad de formatos, idiomas y tipos de documento:
+
+Algunas de las imágenes corresponden a tickets o recibos de comidas de viajes, taxis o transporte público por lo tanto algunos carecen de todos los campos fiscales obligatorios.
+
+Además, este dataset incluye facturas internacionales de proveedores en Alemania, Italia, Dinamarca y Japón. Por lo tanto, refleja la actividad real de una empresa que compra equipamiento técnico a nivel internacional.
+
+3.3.2 Preparación
+
+Para poder evaluar el sistema de forma cuantitativa, fue necesario crear un ground truth. Se trata de un archivo JSON con los valores correctos de cada campo para cada factura, anotados manualmente inspeccionando cada documento del dataset.
+
+Se anotaron 12 campos por factura:
+- Número de factura
+- Fecha de emisión
+- Empresa emisora
+- NIF emisor
+- Empresa receptora
+- NIF receptor
+- Importe total
+- Base imponible
+- IVA
+- Forma de pago
+- Fecha de vencimiento
+- Conceptos
+
+En el caso de que no existiese dicho campo se marca como vacío.
+
+Este formato permite hacer la evaluación de manera automática y verídica para hacer su posterior análisis, que es uno de los objetivos principales de este proyecto.
+
+3.4 Pipeline de procesamiento de facturas
+
+El pipeline de procesamiento se estructura en cinco fases encadenadas que reciben como entrada una factura en formato PDF o imagen y producen como salida un conjunto de datos estructurados. Cada fase se describe a continuación.
+
+Ingesta de datos
+
+La primera fase del pipeline se centra en la entrada de facturas desde las fuentes disponibles. En el contexto de este trabajo, se trabajará principalmente con facturas en formato PDF.
+
+Durante esta fase se realizarán validaciones iniciales, por ejemplo, comprobar que el archivo no esté vacío, que se pueda abrir y verificar su formato. De esta manera se asegura que los documentos no estén corruptos y no arrastrar errores a la siguiente fase.
+
+OCR
+
+La segunda fase del pipeline consiste en aplicar OCR para convertir las facturas en texto legible. Se probará distintas configuraciones relevantes como idioma, modo de segmentación de página, resolución mínima, etc.
+
+Se usarán las métricas CER y WER para tener una idea aproximada de la calidad del texto generado. Dichas métricas ayudarán al desarrollo del proyecto para entender hasta qué punto los errores de lectura pueden afectar a la extracción posterior.
+
+Postprocesado del texto
+
+La tercera fase se centrará en limpiar y normalizar el texto obtenido de la fase 2 antes de pasarlo al LM. Ejemplos de operaciones:
+- Eliminación de caracteres claramente corruptos.
+- Normalización de espacios y saltos de línea.
+- Unificación de ciertos símbolos relacionados con importes y fechas.
+
+El propósito de esta fase no es editar el diseño de la factura, sino reducir el ruido para facilitar el trabajo del LM y de las métricas de evaluación.
+
+Extracción Semántica con LM
+
+En la cuarta fase se utilizarán LMs basados en la arquitectura Transformer para realizar la extracción semántica de los campos definidos. La metodología se basará principalmente en técnicas de prompting. Se proporcionará al modelo el texto de la factura junto con instrucciones sobre qué campos se solicitan y en qué formato se debe devolver los datos (JSON, CSV, etc.).
+
+Durante el desarrollo se irán ajustando progresivamente dichos prompts. En caso de que el sistema lo requiera, se podría estudiar como trabajo futuro añadir más complejidad al proyecto utilizando técnicas como RAG.
+
+Evaluación de resultados
+
+La última fase del pipeline está dedicada a la evaluación del sistema. A partir de las salidas del modelo, se calcularán métricas cuantitativas como:
+- Precision: proporción de campos extraídos que son correctos.
+- Recall: proporción de campos que el sistema ha conseguido encontrar de todos los que debería extraer.
+- F1-Score: media armónica entre precisión y recall, para resumir el rendimiento en un solo valor.
+
+3.5 Reproducibilidad
+
+Uno de los objetivos del proyecto es que cualquier persona con acceso a las mismas herramientas pueda replicar el proceso seguido y obtener resultados equivalentes. Para ello se han documentado de forma explícita el entorno de ejecución, las versiones de las dependencias, los modelos utilizados y los parámetros de configuración de cada componente.
+
+3.5.1 Entorno de ejecución
+
+Todos los experimentos se han ejecutado en una única máquina con las siguientes características:
+- Sistema operativo: Windows 11 Pro
+- Procesador: AMD Ryzen 7 9800X3D
+- Memoria RAM: 32GB DDR5
+- GPU: Sin utilizar
+- Almacenamiento: SSD NVMe 2TB
+
+3.5.2 Entorno software
+
+El sistema se ha desarrollado con las siguientes herramientas:
+- Python 3.13: Lenguaje principal
+- Tesseract OCR 5.5.0: Reconocimiento óptico de caracteres
+- pytesseract 0.3.13: Wrapper de Tesseract para Python
+- Pillow (PIL) 12.0.0: Procesamiento de imágenes
+- Pdf2image 1.17.0: Conversión PDF a Imagen
+- Poppler: Motor de renderizado PDF
+- OpenCV 4.12.0: Preprocesado de imagen
+- Anthropic 0.89.0: SDK de Claude
+- Openai 2.29.0: SDK de GPT
+- Google-genai 1.70.0: SDK de Gemini
+- Matplotlib 3.8.0: Generación de gráficas
+- Numpy 2.2.6: Cálculo numérico
+- Python-dotenv 1.2.1: Carga de variables de entorno
+
+3.5.3 Configuración de los modelos
+
+Todos los modelos de lenguaje se han configurado con temperatura 0.0 para obtener resultados deterministas y reproducibles. Con este valor, el modelo siempre devuelve la respuesta más probable ante una misma entrada, lo que permite que dos ejecuciones del mismo experimento produzcan los mismos resultados. A continuación se muestra la configuración:
+- OCR: Tesseract PSM 6, idioma español (spa)
+- Claude: Modelo claude-sonnet-4-6, temperatura 0.0, max tokens 4096
+- GPT-4: Modelo gpt-4o, temperatura 0.0, modo JSON estructurado
+- Gemini: Modelo gemini-2.5-flash, temperatura 0.0
+- Resolución de imagen: 300 DPI para la conversión de PDFs

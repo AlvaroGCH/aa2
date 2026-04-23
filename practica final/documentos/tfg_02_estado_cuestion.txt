@@ -1,0 +1,106 @@
+TFG - Capítulo 2: Estado de la cuestión
+Título: Desarrollo de software para extracción automática de datos de facturas empresariales
+Autor: Álvaro García-Calderón Huerta
+
+2. ESTADO DE LA CUESTIÓN
+
+Se presenta el contexto teórico y práctico sobre el que se apoya el trabajo. En primer lugar, se describe el marco teórico que sustenta el sistema, incluyendo los modelos de lenguajes basados en Transformer, el procesamiento inteligente de documentos (IDP) y las métricas habituales para evaluar sistemas de extracción. A continuación, se revisa el estado del arte, analizando herramientas comerciales, proyectos académicos similares y las soluciones basadas en IA generativa más recientes.
+
+2.1 Marco teórico
+
+El marco teórico de este proyecto se apoya en tres pilares fundamentales:
+- Modelos de lenguaje basados en Transformer, que permiten la comprensión semántica del texto.
+- Procesamiento inteligente de documentos (IDP), que combina OCR con IA para transformar documentos no estructurados en información estructurada.
+- Métricas de evaluación que se utilizan habitualmente para medir la calidad de los sistemas de extracción.
+
+2.1.1 Modelos de lenguaje basados en Transformer
+
+Los modelos de gran escala (LLM) se componen de una estructura basada en redes neuronales profundas (Goodfellow et al., 2016) que han sido entrenadas con grandes volúmenes de datos y que tienen como objetivo generar y comprender el lenguaje natural. La mayoría de estos modelos utilizan la arquitectura Transformer, propuesta por Vaswani et al. (2017), que supuso un cambio revolucionario de paradigma en el campo del procesamiento del lenguaje natural (NLP) que sustituye a las arquitecturas de redes neuronales recurrentes (RNN) y convolucionales (CNN). A partir de este trabajo, modelos como BERT (Devlin et al., 2018) y GPT-3 (Brown et al., 2020) demostraron la eficacia de preentrenar grandes modelos sobre cuerpos masivos de texto para después adaptarlos a tareas concretas mediante prompting o fine-tuning.
+
+En un Transformer, el texto de entrada se divide en tokens y cada token se transforma en un vector numérico que representa su significado aproximado. Posteriormente, el modelo utiliza capas de auto-atención para decidir a qué partes del texto debe prestar más atención a la hora de generar la salida. Esto significa que el modelo puede identificar el documento completo y ponderar qué palabras son relevantes para entender el contexto, lo cual es clave para tratar documentos largos como una factura.
+
+Para tareas de extracción de información, los LLM por norma general se pueden utilizar de dos maneras. Por un lado, usando prompting, es decir, proporcionando al modelo un texto de la factura junto a las instrucciones de qué datos extraer y cómo devolverlos (JSON por ejemplo). Por otro lado, en sistemas más avanzados se utiliza la técnica de generación aumentada por recuperación o RAG (Lewis et al., 2020), donde se combinan los LLM con sistemas de búsqueda para añadir contexto adicional procedente de bases de datos u otros documentos relacionados. Para ambos casos, la idea es aprovechar la capacidad del modelo para entender el significado del texto y no limitarse a su lectura literal.
+
+2.1.2 IDP
+
+El procesamiento inteligente de documentos (IDP) agrupa soluciones que combinan OCR con IA, para automatizar la extracción de datos de documentos. A diferencia del OCR tradicional, IDP busca transformar documentos no estructurados en información estructurada. Trabajos académicos como LayoutLM (Xu et al., 2020) han demostrado la efectividad de preentrenar modelos específicamente sobre la estructura bidimensional de documentos, combinando texto y disposición visual. Para llevarlo a cabo se usan varias capas: reconocimiento de texto, clasificación de documentos, identificación de campos relevantes y validación previa a la integración.
+
+Un flujo típico de IDP suele incluir varias etapas encadenadas. En primer lugar, realiza la captura del documento, que puede llegar en distintos formatos (PDF o imagen entre otros). A continuación, se aplica OCR para convertir la imagen en texto legible, en otros casos, también se clasifica el tipo de documento para determinar si es una factura, un contrato, un recibo u otro tipo de documento. Después de esta clasificación, el sistema ejecuta una fase de extracción, donde se buscan campos específicos (por ejemplo, proveedor, fecha, importe, número de factura), y finalmente se realiza una validación automática antes de enviar los datos a otros sistemas, como un ERP o una herramienta de contabilidad.
+
+2.1.3 Métricas para evaluar sistemas de extracción
+
+Para la evaluación se recurre a las métricas de clasificación típicas como Precision, Recall y F1-Score (Jurafsky & Martin, 2023). Precision indica qué proporción de los campos extraídos por el sistema son correctos. Recall mide qué proporción de todos los campos que deberían extraerse ha sido efectivamente encontrados. F1-Score, se calcula como la media armónica entre Precision y recall, de esta manera representa en un único valor el equilibrio entre las métricas mencionadas anteriormente. Con estas métricas se logra identificar si hay clases desbalanceadas o cuántos falsos positivos y falsos negativos hay.
+
+En sistemas OCR es habitual usar la tasa de error de caracteres (CER) y la tasa de error de palabras (WER) para cuantificar la calidad del texto.
+
+2.1.4 LLMs en auge
+
+En paralelo a las soluciones comerciales específicas para facturas y a los sistemas tradicionales basados en OCR y reglas en los últimos años han aparecido LLMs de propósito general que han cambiado por completo la forma de abordar problemas de extracción de información. Todos los modelos que veremos a continuación comparten capacidades como la generación de texto coherente, el análisis de documentos extensos y, en muchos casos, la multimodalidad (texto, imagen, audio o vídeo), pero cada una sigue una estrategia distinta en términos de seguridad, integración en productos y especialización.
+
+GPT
+
+Desarrollado por OpenAI (2024), es la empresa que popularizó el uso de los LLMs con el lanzamiento de ChatGPT a finales de 2022. Son modelos basados en la arquitectura de Transformer que se entrenan con grandes cantidades de texto y otros datos, lo cual, les permite generar y comprender el lenguaje natural en múltiples idiomas y contextos.
+
+A lo largo de estos años OpenAI ha lanzado diversos modelos, pero uno de los éxitos recientes más importante fue el lanzamiento de GPT-4o en 2024. Este modelo revolucionó el mercado gracias a que aceptaba como entrada combinaciones de texto, imagen, audio e incluso vídeo y es capaz de generar como salida texto audio e imágenes, por lo tanto, hizo la interacción con la IA más natural.
+
+Gemini
+
+Desarrollado por Google DeepMind (2025) lanzó su primer modelo en 2023 con Gemini 1.0, al igual que su competencia directa, se trata de un diseño multimodal que es capaz de razonar sobre texto, imágenes, videos, audio y código.
+
+Google fue evolucionando su modelo hasta llegar a la segunda generación que introdujo Gemini 1.5, la cual, traía la novedad de poseer una gran ventana de contexto que alcanzaban los millones de tokens. Dentro de cada modelo podemos encontrar distintas versiones del mismo:
+- Gemini Pro: Modelo con todas las capacidades más avanzadas disponibles funcionalidades de razonamiento complejo, programación avanzada y multimodalidad.
+- Gemini Flash: Se trata de la versión optimizada para conseguir eficiencia y velocidad para resolver tareas sencillas, pero de alto volumen de procesamiento.
+
+Claude
+
+Desarrollado por Anthropic (2026), compañía fundada por antiguos investigadores de OpenAI, que desde un principio abogan por la seguridad y alineamiento del modelo para su uso razonable en el mundo empresarial. Hoy en día, Claude se ha convertido en una alternativa real a soluciones como ChatGPT o Gemini, ya que permite mantener conversaciones, extraer datos de documentos, generar contenido y resolver tareas de programación con un rendimiento competitivo.
+
+Actualmente Claude dispone de tres modelos que buscan equilibrar inteligencia, velocidad y coste en función del caso de uso:
+- Haiku: se trata del modelo de lenguaje más económico que ofrece Anthropic. Sacrifica inteligencia para que sea más rápido y ligero, excelente para resolver problemas sencillos de manera rápida y con coste bajo.
+- Opus: el modelo de lenguaje más avanzado y potente de la compañía. Se trata de motor capaz de resolver problemas complejos orientado a tareas de alto nivel como automatización compleja, asistencia de investigación, análisis de datos o visión avanzada sobre imágenes y documentos, pero tiene un coste alto y sacrifican velocidad.
+- Sonnet: es el punto intermedio entre los anteriores modelos, que busca ese equilibrio entre rendimiento y coste.
+
+Una de las características que identifican a Anthropic es el "Constitutional AI". En lugar de depender únicamente de técnicas clásicas de feedback humano o fine-tuning, el modelo se entrena siguiendo una constitución de reglas y principios que definen qué tipos de respuestas son aceptables y cuáles deben evitarse. Tienen como objetivo, hacer un sistema más predecible y menos propenso a generar contenido dañino o desalineado.
+
+2.2 Estado del arte
+
+En los últimos años han aparecido múltiples soluciones para automatizar la extracción de datos de facturas, siguiendo distintos enfoques. A continuación, se analizan las principales categorías:
+- Herramientas comerciales orientadas a empresas
+- Proyectos similares
+- Repositorios de código abierto con objetivos similares
+- Soluciones basadas en IA generativa que combinan OCR con modelos de lenguaje
+- Repaso de los LLMs de propósito general que han impulsado este tipo de enfoque
+
+2.2.1 Herramientas comerciales
+
+En los últimos años han aparecido herramientas comerciales enfocadas en automatizar la lectura de facturas siguiendo la tendencia IDP explicado anteriormente.
+
+Algunos ejemplos de productos del mercado pueden ser herramientas como Klippa (2024), Parseur (2024) o Nanonets (2024) que permiten enviar facturas en PDF o imagen y procesan los campos de forma estructurada (Fecha, importe, proveedor, número de factura, etc). Dichas plataformas ofrecen modelos preentrenados para facturas, plantillas configurables y paneles para revisar y corregir manualmente los resultados cuando es necesario.
+
+En el caso de Klippa, se identifica como un software de lectura de facturas y otros documentos financieros mezclando OCR e IA, dispone de modelos preentrenados y también da la posibilidad de entrenar modelos elegidos por el usuario. Nanonets sigue la misma dinámica, pero se centra en la automatización de flujos permitiendo conectar con herramientas o sistemas ERP. Parseur pone el foco de atención en la definición de plantillas visuales, por ejemplo, el usuario marca una vez las zonas que le interesa de su factura de ejemplo y, a partir de ahí, el sistema intenta generalizar sobre facturas similares.
+
+Por otro lado, existen servicios en la nube de grandes proveedores como Azure AI Document Intelligence (Microsoft, 2024) y Amazon Textract (AWS, 2024) que también proporcionan modelos específicos para facturas que devuelven los campos extraídos en formato JSON. Estas opciones están pensadas para aquellas empresas o usuarios que tengan su arquitectura desplegada en la nube.
+
+El punto común de todas las herramientas mencionadas es reducir la necesidad de las operaciones manuales y mejorar la calidad de vida del trabajador y la calidad de la información registrada pero la mayoría tiene el problema de ser productos cerrados, por lo tanto, el usuario puede ajustar parámetros y plantillas, pero no tiene un control total sobre el modelo utilizado ni de la extracción utilizada. Esto da a pie a enfoques más flexibles, basados en modelos de lenguaje generativos para que permitan la extracción de datos sin necesidad de tener múltiples plantillas fijas.
+
+2.2.2 Proyectos similares y diferenciación
+
+Además de las soluciones comerciales, existen proyectos académicos y desarrollos independientes que abordan problemas parecidos al de este TFG. Estos trabajos se centran en automatizar la extracción de información de facturas u otros documentos estructurados usando técnicas de OCR tradicionales. Estos trabajos tienen un objetivo común y es el reducir el tiempo dedicado al picado manual de datos y mejorar la precisión de la extracción de los datos.
+
+Algunos trabajos académicos y proyectos universitarios plantean arquitecturas que primero aplica OCR a las facturas y posteriormente utilizan reglas heurísticas o modelos entrenados sobre un conjunto de plantillas. Este diseño es eficaz si los casos de uso verdaderamente corresponden con alguna plantilla dentro del conjunto, en el momento que se sale de dicho conjunto tendrá dificultades para extraer datos de nuevos proveedores o diseños no contemplados durante el entrenamiento inicial.
+
+Por otro lado, se puede encontrar proyectos y repositorios código abierto. En diversos casos, la lógica de extracción se basa en buscar patrones concretos dentro de un documento, por ejemplo, expresiones regulares para números de factura o importes. La ventaja de este tipo de soluciones tradicionales es que no depende de servicios o herramientas externas, pero la parte de automatización requiere de un mantenimiento alto debido a la demanda de introducir variedad de diseños o formatos de facturas.
+
+Un ejemplo más reciente es el repositorio "facturas2json" (lahoramaker, 2023), que implementa un extractor de facturas combinando el motor de OCR Marker con el modelo de lenguaje NuExtract y presenta los resultados a través de una interfaz web construida con Streamlit. A diferencia del enfoque planteado en este TFG, se trata de una herramienta funcional orientada al usuario final que utiliza un único modelo de lenguaje especializado en extracción, sin incorporar una evaluación cuantitativa sistemática ni una comparación entre distintos LLMs.
+
+En comparación con los trabajos o proyectos mencionados, este TFG se diferencia principalmente en el uso de modelos de lenguaje generativos como pieza central, no obstante, se combinará con los sistemas OCR tradicionales para posteriormente comparar los distintos métodos y realizar un análisis profundo del desarrollo y resultado.
+
+2.2.3 Soluciones basadas en IA generativa
+
+Recientemente se ha empezado a ver soluciones que combinan OCR con LLM para extraer información de facturas de forma más flexible (Konfuzio, 2024; elDoc, 2024). En este sistema, el OCR convierte el PDF o imagen a texto y posteriormente un LLM analiza dicho texto con un prompt bien diseñado para obtener los campos de la factura en un formato estructurado.
+
+Algunos productos o plataformas del mercado ofrecen este tipo de enfoque donde el usuario define qué campos quiere extraer y en qué formato quiere la salida. Por ejemplo, el usuario sube una factura en formato PDF y obtiene un JSON con los campos que ha solicitado como por ejemplo proveedor, fecha, IVA o total, sin tener que añadir diversas plantillas para tipo de diseño de factura. De esta manera simplificas el problema únicamente a definir los parámetros a extraer.
+
+Además, existen proyectos y tutoriales que enseñan a como combinar librerías de OCR con LM para construir extractores de facturas personalizados, uno de los objetivos de este TFG. Existen librerías OCR para diversos lenguajes, pero el más destacado es Python por su amplia comunidad.
+
+En comparación con los sistemas tradicionales, las soluciones basadas en IA generativa ofrecen varias ventajas, mayor capacidad de adaptación ante distintos formatos de factura y una comprensión semántica más precisa. Sin embargo, no todo son ventajas, ya que en la mayoría de estos agentes supone un coste por uso de ella, algunos son dependes de un servicio externo por lo tanto pierdes la privacidad de los datos, necesidad de controlar los posibles errores que pueda introducir el modelo y la importancia de diseñar buenos prompts y mecanismos de validación. Es por ello que este TFG trata de cómo aprovechar todo el potencial de los LM para una buena extracción de datos sin sufrir riesgos.

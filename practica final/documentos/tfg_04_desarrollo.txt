@@ -1,0 +1,319 @@
+TFG - Capítulo 4: Desarrollo
+Título: Desarrollo de software para extracción automática de datos de facturas empresariales
+Autor: Álvaro García-Calderón Huerta
+
+4. DESARROLLO
+
+Este capítulo describe el desarrollo completo del sistema implementado. Comienza por la arquitectura general, continúa con cada uno de los módulos del pipeline (ingesta, OCR, limpieza, extracción semántica y almacenamiento) y termina con la evaluación sobre los dos casos de estudio y el análisis comparativo de los resultados obtenidos.
+
+4.1 Arquitectura del sistema
+
+El sistema desarrollado sigue una arquitectura de pipeline lineal, en la que cada módulo se encarga de una única tarea y pasa su resultado al siguiente de forma secuencial. La elección de este pipeline frente a otras alternativas complejas o simples fue una decisión razonada. Se descartaron arquitecturas basadas en eventos, microservicios o sistemas de colas porque añadirían complejidad sin aportar beneficio real, del alcance definido de este proyecto. El objetivo es demostrar que la combinación de OCR y LLMs es viable para la extracción automatizada de datos de facturas. Es por ello que un pipeline secuencial cumple el objetivo con varias ventajas:
+- Flujo de datos predecible.
+- Fácil de seguir.
+- Cada etapa está aislada.
+- Depuración sencilla gracias a la modularidad.
+
+Dicha arquitectura sigue el concepto de procesamiento inteligente de documentos (IDP), descrito en el capítulo 2, donde se ejecutan las distintas fases:
+- Captura del documento.
+- Reconocimiento de texto.
+- Extracción de campos.
+- Validación.
+
+La diferencia principal con las soluciones comerciales analizadas en el estado de la cuestión es que, en lugar de utilizar modelos preentrenados específicos para facturas, este sistema delega la extracción semántica a un LM de propósito general al que se le proporciona instrucciones mediante un prompt.
+
+4.1.1 Principios de diseño
+
+El diseño del sistema sigue cuatro principios aplicados a todos los módulos:
+- Separación de responsabilidades: Cada módulo del pipeline tiene una única función. El módulo de ingesta convierte documentos a imágenes, el de OCR extrae texto, el de limpieza normaliza ese texto, el extractor genera datos estructurados y el almacenamiento los persiste.
+- Encapsulación de dependencias externas: Tanto el motor OCR como el modelo de lenguaje están abstraídos mediante interfaces. Esto significa que el resto del código no sabe si el OCR lo hace Tesseract o Google Vision, ni si la extracción lo hace Claude, GPT-4o o Gemini. Recibe una imagen y devuelve texto (OCR), o recibe un texto y devuelve un diccionario de datos (LLM). Durante el desarrollo se pudo ir implementando poco a poco 3 extractores LLM distintos sin necesidad de modificar ningún otro módulo del pipeline, lo que confirmó que la abstracción funciona en la práctica.
+- Configuración centralizada: Todas las constantes del sistema como pueden ser rutas por defecto, campos a extraer, modelo LLM seleccionado, idioma del OCR, se encuentran en un único archivo de configuración para facilitar la experimentación del desarrollo del sistema.
+- Diseño orientado a la evaluación: el sistema se diseñó pensando en que cada resultado pudiera evaluarse de forma cuantitativa. Por eso cada archivo JSON de salida incluye metadatos como el modelo utilizado, el tiempo de procesamiento y los tokens consumidos. Así permite medir la precisión del sistema, comparar el rendimiento y coste de diferentes configuraciones.
+- Estructura de módulos/carpetas: Podremos localizar rápidamente cualquier componente y entender su función o fase por la carpeta en la que se encuentra. Además, facilita que en un trabajo futuro se pueda sustituir o ampliar cualquier módulo de forma independiente.
+
+4.2 Ingesta de documentos y módulo OCR
+
+La primera parte del pipeline es la que se encarga de transformar el documento original en texto plano legible por el sistema. Esta transformación se realiza en dos fases diferenciadas, empezando por la ingesta que normaliza el formato del archivo de entrada y después la extracción del texto mediante OCR.
+
+4.2.1 Ingesta de documentos
+
+El primer módulo del pipeline se encarga de recibir los archivos de entrada y convertirlos a un formato uniforme con el que pueda trabajar el resto del sistema. Las facturas pueden llegar en distintos formatos, PDF, JPG o PNG.
+
+Proceso: Al obtener el archivo se comprueba su extensión para determinar su formato. Si es una imagen, la cargamos directamente como objeto usando la librería PIL. Si se trata de un PDF, se convierte a una lista de imágenes, una por cada página del documento, utilizando la librería pdf2image. La resolución elegida para esta conversión es de 300 DPI, un valor que ofrece un buen equilibrio entre calidad suficiente para que el OCR funcione correctamente y un consumo de memoria razonable. Si se aumentan la resolución posiblemente mejora la precisión del OCR en algunos casos, pero añadirían tiempo de procesamiento y uso de memoria, es por ello por lo que se ha buscado un equilibrio para el proyecto.
+
+Limitación: cuando un PDF tiene más de una página, el sistema las procesa todas y concatena el texto extraído de cada una de forma secuencial. Funciona correctamente para la mayoría de los casos del dataset, pero puede generar problemas si una factura distribuye la información relevante de una forma dispersa entre páginas.
+
+4.2.2 Extracción de texto con OCR
+
+El módulo OCR es el encargado de convertir las imágenes en texto legible. En este caso se usa Tesseract (Smith, 2007), un motor OCR de código abierto originalmente desarrollado en HP Labs y posteriormente mantenido por Google. Proporciona distintos modos de segmentación de página (PSM) que determinan cómo interpreta la estructura del documento.
+
+Configuración aplicada: Se eligió el PSM 6, ya que asume un bloque uniforme de texto. Esta configuración se comprobó que es más adecuada que el PSM 3 (detección automática completa) porque las facturas presentan una estructura tabular predecible, y el modo automático introducía variabilidad en los resultados sin mejorar la precisión. Por otro lado se configuró el idioma español dado que las mayorías de las facturas de los casos de estudio son de proveedores españoles.
+
+Interfaz abstracta: La decisión de crear una interfaz abstracta para el OCR, fue para poder añadir otro motor OCR alternativo como por ejemplo Google Vision. De esta manera se sigue el diseño modular mostrado en la arquitectura que abre las puertas a futuras ampliaciones del proyecto.
+
+4.2.3 Errores típicos durante el desarrollo del OCR
+
+Durante las pruebas con las facturas, se identificaron errores sistemáticos que Tesseract comete de forma recurrente. Estos errores condicionan directamente la calidad del texto que recibe el LLM en la siguiente fase.
+
+Tipos de error detectados:
+- Caracteres acentuados corruptos: "Razón" aparece como "Raz?n". Causa probable: fuente mal reconocida o problema de encoding.
+- Espaciado irregular: "Fecha:03/01/2025" con espacios entre campos no detectados.
+- Confusión entre caracteres similares: Letra "O" y número "0" por similitud visual en determinadas fuentes.
+
+Los errores confirman las limitaciones del OCR tradicional descritas en el estado de la cuestión. Tesseract es capaz de transcribir texto con precisión, pero no tiene comprensión semántica del contenido.
+
+4.3 Limpieza y postprocesado de texto
+
+El texto que produce Tesseract no está listo para enviarse directamente al modelo de lenguaje. Contiene ruido (espacios duplicados, caracteres de control invisibles, símbolos corruptos y más) que, aunque a vista de una persona lo ignoraría al leer, para el extractor dificulta la tarea. Para llevarlo a cabo, se aplica las siguientes transformaciones:
+- Normalización de espacios: Cuando Tesseract encuentra separaciones entre columnas o campos de una factura, a veces genera secuencias de múltiples espacios consecutivos. El limpiador los reduce a un único espacio para que el texto sea más legible y uniforme.
+- Eliminación de caracteres de control: Los documentos escaneados o convertidos desde PDF pueden contener caracteres invisibles (tabuladores extraños, caracteres Unicode de control o saltos de página) que no aportan información útil, y añadirían más trabajo al extractor por lo tanto más costoso. Se eliminan todos excepto los saltos de línea, tabuladores y retornos de carro, que sí tienen valor estructural en una factura.
+- Normalización de saltos de línea: Tesseract tiende a introducir bloques de líneas vacías entre secciones del documento. Cuando hay más de dos saltos de línea consecutivos, se reducen a dos. Esto mantiene la separación visual entre secciones sin desperdiciar espacio en el prompt que recibirá el LLM.
+- Corrección de símbolos frecuentes: El carácter de reemplazo Unicode, que aparece cuando Tesseract no puede reconocer un símbolo, se sustituye por "EUR" cuando aparece en contexto de importes. Los guiones largos, que a veces se confunden con otros caracteres, se normalizan al guion medio "-".
+
+Limpieza conservadora
+
+Se ha optado por una estrategia conservadora, es decir, se ha decidido deliberadamente no realizar demasiada limpieza debido a que si lo hacemos muy agresivo daría más problemas que soluciones.
+
+Por ejemplo, se podría añadir reglas que sustituyan automáticamente la letra "O" por el digito "0" cuando aparece en contextos numéricos, o la letra "i" por el digito "1", pero puede afectar a casos como el NIF o CIF que tienen caracteres y letras de seguido y estaríamos cometiendo un error. El riesgo de generar falsos positivos es alto y difícil de controlar con reglas estáticas.
+
+En lugar de intentar corregir estos errores con metodología de prueba y error, se tomó la decisión de confiar en la capacidad del modelo de lenguaje para interpretar el contexto. Por ejemplo, si Tesseract produce "TOTA1 FACTURA: 72,23" en lugar de "TOTAL FACTURA: 72,23", un LLM es capaz de entender que se trata del importe total a pesar del error, porque relaciona la semántica y el contexto.
+
+4.4 Extracción semántica con modelos de lenguaje
+
+Esta sección describe el componente central del sistema: el módulo que recibe el texto limpio de una factura y devuelve los datos estructurados en formato JSON. Es la pieza que diferencia este proyecto de un sistema de extracción tradicional basado en reglas.
+
+4.4.1 Campos extraídos
+
+El sistema extrae 12 campos de cada factura, que cubren la información mínima necesaria para el registro contable de un documento:
+- numero_factura (String): ej. "A-111111-111111"
+- fecha_emision (Fecha ISO): ej. "2025-03-04"
+- empresa_emisora (String): ej. "MERCADONA S.A."
+- nif_emisor (String): ej. "A12345678"
+- empresa_receptora (String): ej. "IAG S.L."
+- nif_receptor (String): ej. "B12345678"
+- importe_total (Decimal): ej. 72,23
+- base_imponible (Decimal): ej. 59,69
+- iva (Decimal): ej. 12,54
+- forma_pago (String): ej. "TARJETA BANCARIA"
+- fecha_vencimiento (Fecha ISO): ej. "2025-02-15"
+- conceptos (Lista): Descripción, cantidad, importe
+
+Los primeros 8 campos estaban definidos desde el diseño inicial del sistema. Durante el desarrollo se añadieron 4 más (NIF emisor, NIF receptor, forma de pago y fecha de vencimiento) porque al trabajar con facturas reales se hizo evidente que sin ellos el registro contable quedaba incompleto. El NIF/CIF, por ejemplo, es imprescindible porque es el identificador único de una empresa.
+
+4.4.2 Diseño del system prompt
+
+El system prompt es el mecanismo mediante el cual se instruye al LLM sobre qué debe extraer y en qué formato debe devolver los resultados. Su diseño es un componente crítico por no decir el que más del sistema, ya que determina directamente la calidad de la extracción. Un prompt mal formulado produce resultados inconsistentes, aunque el modelo sea potente.
+
+Para llevarlo a cabo se estructura en tres partes:
+
+Rol del sistema: Se indica al modelo que actúe como un asistente experto en extracción de información de facturas. Esto orienta al modelo hacia el dominio específico del problema y activa los conocimientos que tiene sobre la estructura típica de facturas comerciales.
+
+Especificación de campos: Se describen los 12 campos a extraer, cada uno con su nombre, tipo de dato esperado y un ejemplo concreto. Para las fechas se especifica que deben devolverse en formato ISO (YYYY-MM-DD), para los importes se indica que deben ser números decimales, y para los conceptos se define la estructura del objeto esperado (descripción, cantidad, importe). Esta especificación detallada reduce la ambigüedad y hace que los resultados sean más consistentes entre distintas facturas.
+
+Restricciones de formato: Se le indica explícitamente al modelo que debe responder únicamente con un JSON válido, sin texto adicional, sin explicaciones ni comentarios. Si un campo no se encuentra en la factura, debe devolverlo "null" (sin valor) en lugar de inventar un valor o dejarlo vacío. Esta restricción es fundamental para que el parsing automático de la respuesta funcione de forma fiable.
+
+El prompt incluye además una instrucción específica para manejar los errores del OCR. Se le dice al modelo que el texto que va a recibir proviene de un OCR y que puede contener errores tipográficos, caracteres corruptos o formatos irregulares. Esto prepara al modelo para ser tolerante con las imperfecciones del texto y aplicar su comprensión contextual en lugar de hacer coincidencias literales.
+
+La decisión de mantener el prompt en un archivo separado y no embebido dentro del código del extractor se llevó a cabo porque durante el desarrollo se iteró varias veces sobre la formulación del prompt, ajustando instrucciones y añadiendo campos, y tenerlo aislado permite modificarlo sin riesgo de introducir errores en la lógica del extractor. Además, permite comparar distintas versiones del prompt para evaluar cuál produce mejores resultados.
+
+4.4.3 Implementación de los extractores LLM
+
+Se implementaron tres extractores basados en modelos de lenguaje distintos. Los tres comparten la misma interfaz abstracta y reciben exactamente el mismo texto de entrada con el mismo prompt, lo que garantiza que las diferencias en los resultados se deban solo al modelo y no a variaciones de instrucciones.
+
+Claude Sonnet 4.6 (Anthropic)
+
+Fue el primer extractor LLM funcional del sistema implementado. Utiliza el parámetro "system", proporcionado por el SDK oficial de Anthropic, para las instrucciones del prompt y temperatura 0.0 para resultados deterministas. Una particularidad de Claude es que a veces envuelve la respuesta JSON dentro de bloques de código markdown (```json ... ```), por lo que el extractor incluye una limpieza automática que detecta y elimina estos bloques antes del parsing. El máximo de tokens de salida se configuró a 4096, suficiente para facturas complejas con muchos conceptos.
+
+GPT-4o (OpenAI)
+
+Se implementó como segundo extractor para poder comparar resultados. Utiliza el modo JSON estructurado de OpenAI (response_format={"type": "json_object"}), que garantiza que la respuesta sea siempre un JSON parseable sin necesidad de limpieza adicional. La temperatura se configuró igualmente a 0.0. GPT-4o resultó ser el más rápido de los tres modelos en tiempo de respuesta.
+
+Gemini 2.5 Flash (Google)
+
+El tercer extractor se añadió para ampliar la comparación. Utiliza el SDK oficial de Google (Google-genai) con temperatura 0.0 también. Gemini presentó un comportamiento interesante, fue el más lento de los tres en tiempos de respuesta con bastante diferencia, pero por otro lado resultó ser el más barato con bastante diferencia también.
+
+Los tres extractores registran automáticamente en los metadatos del JSON de salida el número de tokens de entrada y salida consumidos en cada llamada. Esto permite calcular el coste real de procesamiento por factura y comparar la eficiencia económica de cada modelo.
+
+Costes por LLM ($/M tokens):
+- Claude Sonnet 4.6: 3,00$ input / 15,00$ output
+- GPT-4o: 2,50$ input / 10,00$ output
+- Gemini 2.5 Flash: 0,30$ input / 2,50$ output
+
+La diferencia de coste es notable, Gemini es aproximadamente 14 veces más barato que Claude y 8 veces más barato que GPT-4o. Sin embargo, esa diferencia de precio no se traduce en una diferencia proporcional de precisión. También hay que tener en cuenta que Claude Sonnet 4.6 fue lanzado en 2026, Gemini 2.5 Flash en 2025 y GPT-4o en 2024, por lo tanto, el ser un modelo reciente también influye en el precio.
+
+4.4.4 Encapsulación mediante interfaz abstracta
+
+La decisión de diseño de abstraer el LLM detrás de una interfaz fue una de las que más valor demostró durante el desarrollo. Cualquier extractor recibe un texto y esquema de campos, y devuelve un diccionario con los datos extraídos.
+
+En la práctica, esto significó que añadir un nuevo extractor solo requirió crear una nueva clase que implementase el método definido "extract_structured_data()". La selección del extractor activo se hace mediante una variable de entorno "LLM_PROVIDER", por lo que cambiar de modelo para una ejecución concreta basta solo con modificar un valor en la configuración.
+
+Este diseño no solo facilitó la comparación de tres modelos distintos para la evaluación, sino que deja preparada la infraestructura para trabajo futuro o ampliación. Por ejemplo, se podría usar Llama (Meta), tan solo habría que crear una clase con un único método y conectarla al pipeline existente.
+
+4.4.5 Extractor basado en expresiones regulares
+
+Además de los tres extractores basados en LLMs, se implementó un extractor local que utiliza exclusivamente expresiones regulares y heurísticas de texto. Hay que aclarar que el propósito de este extractor no es competir con los LLMs. Su función principal es servir como punto de partida que permita cuantificar de forma objetiva cuanto aporta la comprensión semántica de un LLM a un enfoque clásico de reconocimiento de patrones.
+
+La estrategia de extracción varía según el campo:
+- Fechas: busca patrones con formato DD/MM/YYYY cerca de palabras clave como "Fecha Factura" o "Fecha emisión" y los convierte a formato ISO.
+- Número de factura: busca secuencias alfanuméricas tras etiquetas como "Nº Factura", "Factura" o "Fra.", descartando falsos positivos frecuentes como "Factura Simplificada".
+- Importes: Busca números decimales en formato español (con coma como separador decimal) en proximidad de etiquetas como "Total Factura", "Base Imponible" o "Cuota IVA".
+- Empresas: utiliza una heurística que busca nombres con forma jurídica (S.A., S.L., S.L.U.) y trata de distinguir emisor de receptor por su posición en el documento y por el contexto ("Razón Social", "Cliente").
+- NIFs: busca patrones que coincidan con el formato de NIF/CIF español (letra + 8 dígitos o 8 dígitos + letra).
+- Conceptos: intenta parsear líneas que contengan un patrón de descripción seguido de cantidad y precio.
+
+Las limitaciones de este enfoque son estructurales y no se pueden resolver añadiendo más reglas:
+- No puede sumar: Cuando una factura tiene múltiples tipos de IVA (4%, 10%, 21%), las bases imponibles y cuotas aparecen por separado. El regex extrae la primera que encuentra, pero no puede sumarlas para obtener el total. Un LLM si puede hacerlo porque entiende que las bases parciales deben agregarse.
+- No distingue roles semánticos: En una factura, tanto el emisor como el receptor son empresas con nombres, NIFs y direcciones. Un regex puede encontrar ambos, pero no sabe cuál es cuál si el layout no sigue el patrón esperado.
+- No tolera errores de OCR: Si Tesseract produce "Raz?n Social" en lugar de "Razón Social", la expresión regular que busca "razón social" no se va a cumplir.
+- No generaliza: Cada formato de factura nuevo puede requerir reglas adicionales. El regex que funciona para Mercadona por ejemplo no funciona necesariamente para Iberdrola, y el que funciona para ambas puede fallar con una factura de Uber, ya que regex requiere de configuración de reglas fija por plantilla.
+
+4.5 Almacenamiento y formato de salida
+
+El último módulo del pipeline se encarga de guardar los datos extraídos en un formato que sea legible, verificable y útil para la evaluación posterior. Cada factura procesada genera un archivo JSON individual que contiene dos bloques, los metadatos del procesamiento y los datos extraídos de la factura.
+
+4.5.2 Metadatos
+
+El bloque de metadatos no contiene la información de la factura en sí, sino del proceso que la generó. Es fundamental para realizar la fase de evaluación después. Cada campo cumple su función:
+- source_file: permite correlacionar el resultado con el archivo original y con una entrada en el archivo de "ground truth".
+- processed_at: marca temporal para ordenar cronológicamente los resultados y saber cuándo se ejecutó cada procesamiento.
+- ocr_engine y llm_model: identifican exactamente qué motor de OCR y qué modelo se usaron para el procesamiento.
+- processing_time_seconds: mide cuánto tardó el sistema, en procesar esa factura concreta, desde la ingesta de datos, hasta el almacenamiento. Con ello, podemos detectar cuellos de botella y comparar la velocidad de los modelos.
+- input_tokens y output_tokens: registran el consumo de tokens de la llamada al LLM, lo que permite calcular el coste real de cada factura procesada a partir de las tarifas del proveedor.
+
+4.5.3 Decisiones de implementación
+
+Varias decisiones técnicas del módulo de almacenamiento merecen mención porque afectan a la importancia de los resultados:
+- Encoding UTF-8 con `ensure_ascii = False`: garantiza que los caracteres españoles (acentos, letra "ñ" o símbolo €) se escriban tal cual, en el archivo, en lugar de salir como secuencias Unicode ("\u00e9" en lugar de la letra "é").
+- Indentación de 2 espacios: formatea el JSON de forma legible para inspección visual. Un JSON compacto sin saltos de línea sería más eficiente en espacio, pero imposible de revisarlo manualmente para comprobar resultados.
+- Creación automática de directorios: el sistema crea las carpetas necesarias si no existen, para evitar errores en la ejecución.
+- Un archivo por factura: en lugar de acumular todas las facturas en un único fichero JSON grande, cada factura se genera su propio archivo. De esta manera, se hace la revisión manual de manera individual con facilidad.
+
+4.5.4 Justificación de JSON frente a base de datos
+
+Se eligió almacenar los resultados en archivos JSON en vez de en una base de datos por varias razones:
+1. Legibilidad: un archivo JSON se puede abrir con cualquier editor de texto y su contenido se entiende de inmediato. Una base de datos requiere un cliente específico o realizar consultas para la inspección de los datos, lo que añade fricción al flujo de trabajo durante el desarrollo.
+2. Simplicidad: no requiere de instalar, configurar ni mantener un servidor de base de datos. Al tratarse de un proyecto TFG, la intención es que cualquier persona pueda replicar los pasos sin dependencias de servicios de terceros, en la medida de lo posible.
+3. Trazabilidad: si se usa la herramienta de Git, se puede versionar los archivos JSON, de esta manera permite mantener un historial completo de los resultados obtenidos en distintas iteraciones del desarrollo.
+4. Suficiencia: dado que el dataset consta de 121 facturas, es un volumen aceptable para trabajar con archivos JSON.
+
+Dicho esto, si se tuviera un gran volumen de datos, se tendría que plantear el uso de alguna base de datos. Porque si no, dejaría de ser un sistema práctico, ya que las búsquedas serían lentas, la gestión de archivos se complicaría y se perderían las ventajas de indexación y consultas que ofrece una base de datos. Esta limitación se asume conscientemente dado el alcance del proyecto y se documenta como punto a considerar en un posible trabajo futuro.
+
+4.6 Casos de estudio
+
+Para evaluar el sistema de forma rigurosa se definieron dos casos de estudio independientes con facturas de empresas reales.
+
+4.6.1 Dataset
+
+Para evaluar el sistema se utilizaron facturas reales de dos empresas distintas, lo que permite medir el rendimiento en escenarios diferentes y con documentos que no fueron diseñados para este proyecto.
+
+La primera empresa es GONJARA S.L., dedicada al sector de la hostelería. Sus facturas proceden de varios proveedores habituales en el sector, en total son 54 facturas, todas en formato PDF digital.
+
+La segunda empresa es IAG S.L.L., una empresa de ingeniería acústica. Sus facturas son mucho más variadas, ya que tiene 46 proveedores distintos, en total son 67 facturas con una mezcla de formatos: 44 PDFs digitales y 23 imágenes.
+
+La empresa 1 representa un caso favorable para el sistema desarrollado ya que tiene facturas digitales con buena calidad de texto. La empresa 2 representa un caso más exigente y realista, documentos heterogéneos, imágenes con calidad variable y gran variedad de tipos de factura.
+
+Para cada factura se anotaron manualmente los 12 campos definidos en el esquema de extracción, generando un archivo de "ground truth" por empresa.
+
+4.6.2 Métricas utilizadas
+
+La evaluación se basa en cuatro métricas complementarias que miden aspectos distintos al rendimiento:
+
+Accuracy mide el porcentaje de campos en los que el valor extraído coincide exactamente con el "ground truth". Se aplican tolerancias razonables:
+- Para números se permite una diferencia de +/- 0,01 por redondeo.
+- Para cadenas de texto se normalizan mayúsculas, espacios y puntuación antes de comparar.
+
+Precision, de todos los campos en los que el sistema extrajo un valor, qué porcentaje era correcto.
+
+Recall mide, de todos los campos que tienen un valor real en el ground truth, qué porcentaje fue extraído correctamente.
+
+F1-Score es la media armónica de precision y recall, y proporciona una métrica equilibrada que penaliza tanto los fallos por omisión como los fallos por error.
+
+4.6.3 Configuración
+
+Se evaluaron cuatro extractores sobre ambos conjuntos de datos. Los tres primeros son modelos de lenguaje de proveedores distintos y el cuarto es un extractor basado en expresiones regulares que sirve como punto de partida.
+
+Los modelos de Claude, Gemini y GPT se configuraron con temperatura 0.0 para obtener resultados deterministas y reproducibles. Los tres reciben el mismo prompt de extracción y devuelven los datos en formato JSON.
+
+El extractor regex no utiliza ningún LLM. Se basa en expresiones regulares genéricas diseñadas para patrones comunes de facturas españolas.
+
+En todos los casos, el motor OCR es Tesseract en modo PSM 6 con idioma español.
+
+4.7 Caso de estudio 1: GONJARA S.L.
+
+El primer caso de estudio corresponde a GONJARA S.L., una empresa del sector de la hostelería cuyo dataset está compuesto íntegramente por PDFs digitales de 15 proveedores habituales.
+
+4.7.1 Accuracy, Precision, Recall y F1
+
+Claude obtiene la mejor precisión global con un 89,8% de F1-Score, seguido de cerca por GPT-4o con un 88,8%. Gemini queda algo por debajo con un 86,4% pero destaca por ser el más económico. Regex, en cambio, tiene una puntuación muy por debajo del resto de extractores.
+
+El F1 de los tres LLMs se sitúa entre el 86% y el 90%, lo que indica un buen equilibrio entre precision y recall. Los modelos raramente dejan un campo vacío (recall superior al 98% en los tres), y cuando extraen un valor suele ser correcto. Regex, sin embargo, tiene un F1-Score del 55%, falla tanto por omisión como por error.
+
+4.7.2 F1-Score por campo
+
+Los campos con formato más regular como fecha de emisión o importe total alcanzan F1-Score superiores al 90% en los tres LLMs. Estos son campos donde el dato aparece de forma predecible en la factura y el LLM no necesita demasiada interpretación semántica para encontrarlo.
+
+En el extremo opuesto, los campos de empresa emisora, conceptos y empresa receptora son los más difíciles, situándose entre el 58% y el 87%. La razón principal es que en algunas facturas el OCR entrega el texto en un orden que no permite distinguir quién o qué vende y quién o qué compra sin entender el contexto del documento.
+
+Regex muestra un comportamiento muy desigual: funciona razonablemente en campos regulares como fechas y NIFs, pero cae a cero en campos semánticos como empresa receptora o conceptos, donde no tiene forma de interpretar el contexto.
+
+4.7.3 Coste y velocidad
+
+Gemini ofrece la mejor calidad-precio, con solo 3,4 puntos menos de F1-Score que Claude, su coste es 7 veces inferior. GPT-4o se sitúa en un punto intermedio tanto en coste como en F1-Score.
+
+GPT-4o es el LLM más rápido, seguido de Claude y Gemini. Evidentemente regex es el más rápido por su procesamiento local, pero su puntuación hace que sea inviable para uso real. Gemini, a pesar de ser el más barato, es el más lento con diferencia.
+
+4.7.4 Tipos de error
+
+Los errores se clasifican en dos categorías: campo vacío (el extractor devolvió null) y valor incorrecto (extrajo algo, pero era erróneo). Claude apenas deja campos vacíos (11 null frente a 95 incorrectos), lo que confirma su alto recall. GPT tiene un patrón similar, pero con algunos null más (13). Gemini tiene los mismos null que Claude, pero más valores incorrectos (128). Regex acumula la mayor cantidad de ambos tipos de error, 157 campos vacíos y 184 incorrectos.
+
+4.8 Caso de estudio 2: IAG
+
+El segundo caso de estudio corresponde a IAG S.L.L., una empresa de ingeniería acústica cuyo dataset es notablemente más heterogéneo, con 46 proveedores distintos y una mezcla de PDFs e imágenes.
+
+4.8.1 Accuracy, Precision, Recall y F1
+
+Claude sigue obteniendo ligeramente la mejor puntuación en todas sus métricas. Lo más llamativo es que Gemini y GPT tienen puntuaciones casi idénticas, de hecho, han obtenido el mismo accuracy 65,7% y el mismo F1-Score 76,6%.
+
+Por otro lado, Regex tiene una puntuación muy por debajo del resto de LLMs, lo cual demuestra cuan impreciso es al no entender la semántica del contexto. Se observa, por ejemplo, que hay una diferencia de aproximadamente 47 puntos de Recall respecto al resto de extractores.
+
+4.8.2 F1-Score por campo
+
+Se observan tonos más claros en empresa emisora, empresa receptora y NIF receptor, no obstante, el resto de los campos tiende a tener puntuación más alta que está por encima del 71%, en los LLMs.
+
+También se puede observar que los valores absolutos como fechas o importes tienden a tener una precisión de más del 90% frente al resto de los campos.
+
+La caída de los nombres o NIFs se explica por las facturas internacionales, como hay proveedores de Italia, Dinamarca o Alemania, tienen distintos formatos al español. Como el sistema está principalmente preparado para facturas españolas, tiene dificultades para estos casos.
+
+4.8.3 Coste y velocidad
+
+Gemini ofrece la mejor calidad-precio, con solo 3,7 puntos menos de F1-Score que Claude, su coste es 8 veces inferior. GPT-4o se sitúa en un punto intermedio tanto en coste como en F1-Score.
+
+GPT-4o es el LLM más rápido, seguido de Claude y Gemini. Regex es el más rápido por su procesamiento local, pero su puntuación hace que sea inviable para uso real. Gemini, a pesar de ser el más barato, es el más lento con mucha diferencia.
+
+4.8.4 Tipos de error
+
+Claude es el que menos deja campos vacíos (25 null frente a 131 incorrectos), lo que confirma su alto recall. GPT tiene algún null más (27) y es el que más valores incorrectos (154) en comparación con el resto de LLMs. Gemini tiene más nulls que su competencia (32) y se acerca los valores incorrectos que tiene GPT (149). Regex acumula la mayor cantidad de ambos tipos de error, 184 campos vacíos y 203 incorrectos.
+
+4.9 Análisis comparativo
+
+Resumen de los resultados por empresa:
+
+Caso estudio 1 (GONJARA S.L.):
+- Claude: Accuracy 83%, Precision 84,6%, Recall 98,1%, F1 89,8%, Tiempo 10,5s, Coste total 1,00$
+- GPT-4o: Accuracy 81,2%, Precision 83,1%, Recall 97,6%, F1 88,8%, Tiempo 8,5s, Coste total 0,56$
+- Gemini: Accuracy 77,7%, Precision 79,3%, Recall 98%, F1 86,4%, Tiempo 19,6s, Coste total 0,14$
+- Regex: Accuracy 45,4%, Precision 64,1%, Recall 59,3%, F1 54,9%, Tiempo 2s, Coste total 0,00$
+
+Caso estudio 2 (IAG):
+- Claude: Accuracy 70,5%, Precision 73,9%, Recall 93,6%, F1 80,3%, Tiempo 6,6s, Coste total 0,72$
+- GPT-4o: Accuracy 65,7%, Precision 69,1%, Recall 92,3%, F1 76,6%, Tiempo 5s, Coste total 0,43$
+- Gemini: Accuracy 65,7%, Precision 70,1%, Recall 91,5%, F1 76,6%, Tiempo 13,4s, Coste total 0,09$
+- Regex: Accuracy 26,7%, Precision 46,3%, Recall 45,6%, F1 35,5%, Tiempo 1,7s, Coste total 0,00$
+
+La primera observación es que el F1-Score tiene una diferencia de aproximadamente 10 puntos. Esto indica que el segundo caso de estudio tuvo más problemas a la hora de extraer los datos que en el primer caso de estudio.
+
+Una vez hecho el análisis del dataset y de los resultados obtenidos, se puede afirmar que se debe a que el conjunto del dataset del primer caso son principalmente PDFs y en el segundo caso se trata de PDFs e imágenes. Por lo tanto, lo más probable es que, aunque tengamos más muestras de la empresa 2, la empresa 1 tiene que procesar durante más tiempo todo su dataset, ya que tiene más carga que el otro.
+
+La relación tiempo/coste también se cumple, cuanto más tiempo tarde de procesar la extracción más cuesta la operación.
+
+En ambos casos, los resultados de Regex son terribles, lo que confirma su poca fiabilidad de uso. Los LLMs en cambio, muestran una fiabilidad alta, siendo Claude la que más seguido muy de cerca de las otras. Gemini ofrece una buena relación calidad/precio debido a que cuesta muy poco para la precisión que ofrece. GPT es el punto intermedio, tiene una precisión alta y un coste moderado.

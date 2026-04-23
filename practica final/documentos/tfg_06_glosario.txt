@@ -1,0 +1,53 @@
+TFG - Glosario de términos
+Título: Desarrollo de software para extracción automática de datos de facturas empresariales
+Autor: Álvaro García-Calderón Huerta
+
+GLOSARIO
+
+- Accuracy. Métrica de evaluación que mide el porcentaje de predicciones correctas sobre el total de predicciones realizadas.
+
+- API (Application Programming Interface). Interfaz que permite a una aplicación comunicarse con un servicio externo mediante peticiones programadas.
+
+- CER (Character Error Rate). Métrica que cuantifica el porcentaje de caracteres mal reconocidos respecto al total, frecuentemente utilizada para evaluar la calidad de sistemas OCR.
+
+- CLI (Command Line Interface). Interfaz de usuario basada en texto que permite ejecutar un programa mediante comandos escritos en una terminal.
+
+- DPI (Dots Per Inch). Medida de resolución que indica el número de puntos por pulgada de una imagen.
+
+- Embedding. Representación numérica de una palabra, frase o documento en forma de vector de números reales, que captura su significado semántico y permite comparar similitudes entre textos.
+
+- ERP (Enterprise Resource Planning). Sistema informático utilizado por las empresas para gestionar de forma integrada procesos como contabilidad, facturación, inventario o recursos humanos. Ejemplos: SAP, Sage, Holded.
+
+- F1-Score. Media armónica entre precision y recall, que proporciona una métrica única que penaliza tanto los falsos positivos como los falsos negativos.
+
+- Fine-tuning. Proceso mediante el cual se ajusta un modelo preentrenado a una tarea específica utilizando un conjunto de datos de entrenamiento adicional. Permite especializar modelos genéricos en dominios concretos.
+
+- Ground truth. Conjunto de datos de referencia etiquetados manualmente que se considera correcto y sirve como base de comparación para evaluar la precisión de un sistema automatizado.
+
+- JSON (JavaScript Object Notation). Formato ligero de intercambio de datos basado en pares clave-valor, legible tanto por humanos como por máquinas. Es el formato de salida utilizado por el sistema para almacenar los datos extraídos.
+
+- LLM (Large Language Model). Modelo de lenguaje de gran escala basado en redes neuronales profundas, entrenado sobre grandes volúmenes de texto para generar y comprender lenguaje natural. Ejemplos: GPT-4o, Claude Sonnet 4.6, Gemini.
+
+- NLP (Natural Language Processing). Rama de la inteligencia artificial que se ocupa de la interacción entre las computadoras y el lenguaje humano, incluyendo tareas como la comprensión, generación y traducción de texto.
+
+- OCR (Optical Character Recognition). Tecnología que convierte imágenes de texto (escaneados, fotografías o documentos PDF) en texto digital procesable por ordenador.
+
+- Pipeline. Secuencia de módulos o procesos encadenados en los que la salida de una etapa se convierte en la entrada de la siguiente. El sistema desarrollado se organiza en un pipeline lineal de cinco fases.
+
+- Precision. Métrica que mide, de todas las predicciones positivas realizadas por el sistema, qué proporción es correcta.
+
+- Prompt. Instrucción o mensaje de texto que se proporciona a un modelo de lenguaje para indicarle qué tarea debe realizar y en qué formato debe devolver la respuesta.
+
+- Prompting. Técnica que consiste en diseñar prompts cuidadosamente formulados para guiar a un modelo de lenguaje hacia los resultados deseados sin necesidad de entrenarlo de nuevo.
+
+- PSM (Page Segmentation Mode). Parámetro de configuración del motor OCR Tesseract que determina cómo interpreta la estructura del documento. En este trabajo se utiliza el modo PSM 6, que asume un bloque uniforme de texto.
+
+- RAG (Retrieval-Augmented Generation). Técnica que combina un modelo de lenguaje con un sistema de búsqueda para enriquecer las respuestas con información recuperada de una base de conocimiento externa.
+
+- Recall. Métrica que mide, de todos los elementos que el sistema debería haber encontrado, qué proporción ha encontrado efectivamente.
+
+- SDK (Software Development Kit). Conjunto de herramientas, bibliotecas y documentación que facilita el desarrollo de aplicaciones utilizando un servicio o plataforma concreta.
+
+- Token. Unidad mínima en la que un modelo de lenguaje divide el texto para procesarlo. Puede ser una palabra, parte de una palabra o un carácter, y es la unidad de facturación habitual en las APIs de LLMs.
+
+- WER (Word Error Rate). Métrica que cuantifica el porcentaje de palabras mal reconocidas respecto al total, habitualmente utilizada para evaluar la calidad de sistemas OCR o de reconocimiento de voz.

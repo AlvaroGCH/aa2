@@ -1,0 +1,57 @@
+TFG - Capítulo 1: Introducción
+Título: Desarrollo de software para extracción automática de datos de facturas empresariales
+Autor: Álvaro García-Calderón Huerta
+
+1. INTRODUCCIÓN
+
+Este primer capítulo introduce el contexto en el que se enmarca el trabajo, expone la motivación personal que lo impulsa, describe el problema a resolver y los objetivos propuestos del proyecto.
+
+1.1 Justificación y contexto
+
+En el ámbito laboral, la buena gestión de facturas es fundamental para el crecimiento y desarrollo de una empresa, ya que requiere de una dedicación constante de recursos humanos y económicos. En diversos casos, estos procesos se realizan de forma manual, lo que puede dar lugar a errores o retrasos y, en consecuencia, supondrá un coste operativo para la empresa.
+
+Dado este contexto y la problemática actual, surge la necesidad de herramientas que faciliten o automaticen los trámites administrativos, con el objetivo de reducir la carga de trabajo asociada a la gestión de documentos, sobre todo en aquellos procesos que sean repetitivos y con poca variación de contenido, como es el caso de las facturas empresariales.
+
+1.2 Motivación
+
+La gestión manual de facturas sigue siendo una práctica habitual en muchas empresas y departamentos administrativos que carecen de sistemas de digitalización completos. Esto implica una dedicación constante de tiempo por parte del personal administrativo, que debe revisar documento por documento, transcribir datos a sistemas contables y validar manualmente la información. Se trata de una tarea repetitiva, propensa a errores humanos que escala de forma lineal con el volumen de facturas.
+
+Por tanto, automatizar este proceso mejora la eficiencia del proceso y reduce costes. Con la aparición reciente de los modelos de lenguajes, se abre el camino a construir sistemas de extracción flexibles, adaptables y económicamente viables para todo tipo de empresa.
+
+Es por ello que hay una motivación técnica de explorar hasta qué punto estos modelos son capaces de sustituir el trabajo manual en casos reales.
+
+1.3 Planteamiento del problema
+
+La extracción de datos de facturas empresariales puede tener varios problemas técnicos que dificultan su automatización. Estos problemas están relacionados tanto del proceso de gestión de las características propias de las facturas como de limitación tecnológica empleada durante su proceso.
+
+1.3.1 Procesos manuales
+
+El principal problema de la gestión manual no es únicamente el tiempo invertido, sino que la dependencia del factor humano introduce errores sistemáticos difíciles de detectar a posteriori, como puede ser datos omitidos o transcripciones incorrectas. Estos errores generan ruido en los sistemas contables y propagan información inconsistente al resto de procesos de la empresa.
+
+1.3.2 Heterogeneidad de formatos de factura
+
+Cada empresa tiene su formato de factura, no existe un formato estándar. Esto supone que haya distintos estilos de facturas por ende habrá distintas denominaciones o ubicaciones de los campos de información relevantes. Al no existir uniformidad añade complejidad a la extracción, ya que no se puede usar métodos de extracción basados en reglas fijas.
+
+1.3.3 Limitaciones del OCR tradicional
+
+Las tecnologías de reconocimiento óptico de caracteres (OCR) permiten convertir documentos escaneados en texto digital. No obstante, tiene sus limitaciones, ya que se especializa en la transcripción del texto sin proporcionar una comprensión semántica del contenido.
+
+1.3.4 Complejidad semántica de la información
+
+La información contenida en una factura no siempre se presenta de forma explícita o de manera sencilla, requiere de una interpretación contextual del lenguaje. Un mismo concepto puede aparecer de diferentes maneras en distintas secciones del documento. Para alcanzar una precisión y fiabilidad alta requiere de resolver dicha complejidad semántica.
+
+1.4 Objetivos
+
+Los objetivos propuestos se dividen en un objetivo principal, que sintetiza el propósito general del proyecto, y una serie de objetivos parciales que concretan los pasos necesarios para alcanzarlo.
+
+1.4.1 Objetivo principal
+
+Desarrollar un sistema automatizado capaz de extraer y estructurar la información relevante de facturas empresariales utilizando técnicas basadas en modelos de lenguaje (LM).
+
+1.4.2 Objetivos parciales
+
+- Definir los requisitos funcionales y no funcionales del sistema de extracción de datos.
+- Diseñar la arquitectura del sistema que integre OCR, modelos de lenguaje y almacenamiento estructurado de la información extraída.
+- Implementar un prototipo funcional que procese facturas reales proporcionadas por la empresa colaboradora y extraiga los campos relevantes (empresa, fecha, importe total, número de factura, conceptos, etc.).
+- Evaluar la precisión y eficiencia del sistema mediante métricas adecuadas y compararlo con otras herramientas o productos existentes en el mercado.
+- Explorar la extensión del sistema para generar, a partir de las facturas procesadas, predicciones sobre futuras facturas o tendencias de gasto y analizar su utilidad para la toma de decisiones.

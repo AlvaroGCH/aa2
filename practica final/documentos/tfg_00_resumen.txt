@@ -1,0 +1,24 @@
+TFG - Resumen y Abstract
+Título: Desarrollo de software para extracción automática de datos de facturas empresariales
+Autor: Álvaro García-Calderón Huerta
+
+RESUMEN
+
+Este trabajo aborda el problema de la extracción automatizada de información estructurada a partir de facturas empresariales, un proceso que en muchas empresas se realiza todavía de forma manual y supone una carga considerable de tiempo y recursos. Se ha diseñado e implementado un sistema modular en Python que combina reconocimiento óptico de caracteres con modelos de lenguaje generativos para extraer los campos relevantes de cada factura y almacenarlos de forma estructurada.
+
+El sistema se ha evaluado de forma comparativa utilizando tres modelos de lenguaje de proveedores distintos (Claude Sonnet 4.6 de Anthropic, GPT-4o de OpenAI y Gemini 2.5 Flash de Google) y un extractor basado en expresiones regulares (Regex). La validación se ha realizado sobre un conjunto de 121 facturas reales proporcionadas por dos empresas colaboradoras de sectores diferentes.
+
+Los resultados muestran que los modelos de lenguaje alcanzan un índice de éxito del 89,8% en el primer caso de estudio y del 80,3% en el segundo, frente al 54,9% y 35,5% obtenidos por el extractor basado en expresiones regulares. El coste de extracción por factura se sitúa por debajo de dos céntimos de dólar, lo que confirma la viabilidad económica del enfoque para empresas pequeñas y medianas.
+
+Palabras clave: extracción de información, LLM, OCR, IDP y facturas.
+
+
+ABSTRACT
+
+This work addresses the problem of automated extraction of structured information from business invoices, a process that in many companies is still performed manually and entails a considerable investment of time and resources. A modular system has been designed and implemented in Python that combines optical character recognition with generative language models to extract the relevant fields from each invoice and store them in a structured format.
+
+The system has been evaluated through a comparative study using three language models from different providers (Claude Sonnet 4.6 from Anthropic, GPT-4o from OpenAI and Gemini 2.5 Flash from Google) and a baseline extractor based on regular expressions (Regex). The validation was carried out on a dataset of 121 real invoices provided by two collaborating companies from different sectors.
+
+The results show that the language models achieve a success rate of 89,8% on the first case study and 80,3% on the second one, compared to 54,9% and 35,5% obtained by the regular expression based extractor. The extraction cost per invoice is below two U.S. cents, which confirms the economic viability of this approach for small and medium sized enterprises.
+
+Keywords: information extraction, LLM, OCR, IDP and invoices.

@@ -1,0 +1,59 @@
+TFG - Capítulo 5: Conclusiones
+Título: Desarrollo de software para extracción automática de datos de facturas empresariales
+Autor: Álvaro García-Calderón Huerta
+
+5. CONCLUSIONES
+
+En este Trabajo de Fin de Grado se ha abordado el problema de la extracción automatizada de información estructurada a partir de facturas empresariales, un proceso que todavía hoy se realiza en muchas empresas de forma manual. A lo largo del proyecto se ha diseñado, implementado y evaluado un sistema que combina OCR con modelos de lenguaje generativos, se ha comparado con un enfoque tradicional basado en expresiones regulares, y se ha validado empíricamente sobre 121 facturas reales proporcionadas por dos empresas colaboradoras de sectores diferentes.
+
+5.1 Discusión
+
+El objetivo principal del trabajo era desarrollar un sistema automatizado capaz de extraer y estructurar la información relevante de facturas empresariales utilizando técnicas basadas en modelos de lenguaje. Este objetivo se ha cumplido, el sistema implementado procesa facturas en formato PDF o imagen y devuelve los 12 campos definidos en un archivo JSON estructurado, con una precisión superior al 89% en el caso de estudio de la empresa 1 y un 80% en el de la empresa 2.
+
+En cuanto a los objetivos parciales, el balance es el siguiente:
+- La definición de los requisitos funcionales y el diseño de la arquitectura se han realizado de forma explícita en los capítulos 2 y 3, optando por un pipeline lineal modular que prioriza la claridad sobre la sofisticación.
+- El prototipo funcional procesa facturas reales y ha sido validado sobre un conjunto diverso de 121 documentos que incluyen PDFs e imágenes.
+- La evaluación cuantitativa se ha llevado a cabo utilizando las métricas estándar Accuracy, Precision, Recall y F1-Score. El sistema se ha comparado contra una base de expresiones regulares como contra tres modelos de lenguaje de proveedores distintos.
+- El objetivo de explorar la extensión del sistema para generar predicciones sobre futuras facturas o tendencias de gasto no se ha abordado en esta entrega. Se tomó la decisión de priorizar la robustez del núcleo de extracción sobre la exploración de funcionalidades adicionales, además de que se necesitaría más datos para entrenar dicha funcionalidad.
+
+Hallazgos principales:
+
+1. El LLM aporta un salto de precisión que Regex no puede replicar. La diferencia de F1-Score entre los modelos de lenguaje y el extractor basado en expresiones regulares es consistentemente superior en ambos casos de estudio, 35 puntos de diferencia en el caso de estudio 1 y 40 puntos en el caso 2. Esta diferencia no es solo cuantitativa sino cualitativa, Regex funciona razonablemente bien en campos con formato muy predecible como fechas o importes totales, pero falla completamente en campos que requieren comprensión semántica, como la identificación del emisor y el receptor o la extracción de la lista de conceptos. Este resultado confirma empíricamente la hipótesis de partida del proyecto y está en línea con lo expuesto en el estado de la cuestión sobre las limitaciones del OCR tradicional y los sistemas basados en reglas.
+
+2. La elección concreta del modelo LLM tiene un impacto limitado. Las diferencias de F1-Score entre Claude, GPT y Gemini son marginales. Es por ello que entra en juego el precio y tiempo de procesamiento de los LLMs en cuestión para determinar cuál es el que mejor conviene usar. Si disponemos de escenarios con poco presupuesto Gemini 2.5 Flash demostró ser la más competitiva. La conclusión práctica es que el valor del enfoque está en usar un modelo de lenguaje como categoría, no en el proveedor específico, y esta es precisamente la razón por la que el diseño basado en interfaces abstractas demostró ser una decisión acertada.
+
+3. El cuello de botella del sistema es la calidad del OCR, no el modelo de lenguaje. La caída de precisión de aproximadamente trece puntos entre la empresa 1 y la empresa 2 es consistente en los tres modelos de lenguaje, lo que indica que la causa no está en el extractor semántico sino en una etapa anterior del pipeline definido. El análisis de los errores confirma que esta caída se debe principalmente a las imágenes de mala calidad, donde Tesseract produce un texto degradado que ningún modelo puede recuperar. Este resultado es importante porque orienta claramente donde conviene invertir esfuerzo en futuras mejoras.
+
+4. El sistema es económicamente viable para empresas pequeñas y medianas. Procesar las 121 facturas reales del caso de estudio tuvo un coste total de entre 0,08$ con Gemini y 1,72$ con Claude. Incluso en el escenario más caro, el coste por factura se sitúa por debajo de dos céntimos de dólar. Para una empresa que procese cientos de facturas al mes, el coste anual del sistema sería inferior al de unas pocas horas de trabajo manual de un administrativo, lo que demuestra que la combinación de OCR + LLM no es solo técnicamente viable sino también económicamente sensata.
+
+Relación con el estado de la cuestión:
+
+Los resultados obtenidos conectan directamente con los puntos tratados en el capítulo 2. Las limitaciones del OCR tradicional descritas en la literatura se han confirmado de forma empírica mediante los errores reales detectados con Tesseract (caracteres acentuados corruptos, espaciados irregulares, confusiones entre caracteres visualmente similares) y mediante el rendimiento notablemente inferior del extractor Regex, que no puede compensar estos errores por falta de comprensión contextual.
+
+Por otro lado, las ventajas de los enfoques basados en IA generativa señaladas en el capítulo 2, "mayor capacidad de adaptación a distintos formatos, comprensión semántica más precisa", también se han confirmado. El sistema procesa correctamente facturas de más de 55 proveedores distintos sin necesidad de definir plantillas específicas para cada uno, lo que lo diferencia frente a soluciones comerciales basadas en plantillas analizadas (Klippa, Parseur, Nanonets) y frente a los proyectos académicos tradicionales basados en OCR y reglas heurísticas.
+
+La diferencia principal de este trabajo respecto a esos proyectos es el enfoque comparativo, no se defiende la superioridad de una herramienta concreta, sino que se cuantifica objetivamente la aportación que hace la capa semántica del LLM frente al pattern matching y se comparan tres modelos distintos sobre un mismo pipeline, lo que permite sacar conclusiones más generales sobre el enfoque en sí.
+
+Limitaciones reconocidas:
+
+Es importante ser explícito sobre las limitaciones del trabajo. El ground truth fue anotado manualmente por una sola persona, lo que introduce posibles errores humanos y sesgos que no pueden detectarse sin una segunda anotación independiente. La evaluación del campo de conceptos se hace de forma simplificada comparando solo la longitud de la lista y no el contenido semántico de cada línea. Algunas de las facturas, sobre todo de imágenes tenían mala calidad al estar realizadas con el móvil y no escaneadas por una impresora, esto dificulta y lastra ligeramente los resultados obtenidos, no obstante, viene bien contemplarlos al ser casos reales.
+
+5.2 Líneas de investigación futuras
+
+A partir de los resultados obtenidos y de las limitaciones identificadas, se proponen varias líneas que podrían ampliar y mejorar el sistema desarrollado.
+
+- Visión multimodal como sustituto del OCR: dado que el cuello de botella del sistema actual es la calidad del OCR, y dado que los modelos utilizados ya aceptan imágenes directamente como entrada, tiene todo el sentido enviar la factura al modelo sin pasar por Tesseract. De esta manera llegarían al modelo los datos originales, pero supondría un mayor coste de procesamiento por parte del modelo, ya que le estaríamos añadiendo más carga.
+
+- Comparación semántica de conceptos: implementar una función de similitud de cadenas, por ejemplo, TF-IDF o embeddings vectoriales, que permitiría evaluar el contenido de cada concepto individual, no solo la longitud de la lista. Daría una medida mucho más precisa de la calidad real de la extracción de conceptos.
+
+- Modelos locales: usar modelos locales para conservar la privacidad de los datos, no todas las empresas están dispuestas a enviar estos datos a una API externa. Evaluar alternativas locales permitiría no depender de estos servicios externos, pero requeriría una infraestructura propia y aceptar una posible pérdida de precisión, ya que nunca tendrás la potencia de los LLM.
+
+- Ampliación del dataset: incluir distintos formatos de facturas, ya sea por distinto idioma o país. También añadir facturas de baja calidad o documentos de estructuras atípicas. Al final es difícil cubrir todas las posibilidades de diseño, pero cuantos más puedas conseguir mejor entrenado estará tu sistema.
+
+- Explorar enfoque sin código con n8n: el sistema desarrollado se puede hacer de distintas maneras, cada una con sus ventajas e inconvenientes, pero sería interesante replicar el sistema usando n8n en lugar de Python, es una manera de hacerlo sin código escalable y también con modularidad, no obstante, sería un servicio más que añadir.
+
+- Clasificación previa: durante la evaluación se observó que algunos documentos no eran facturas en sentido estricto y requerían de un tratamiento diferente. Añadir un clasificador previo ayudaría a determinar qué tipo de documento se está procesando lo cual permitiría aplicar prompts específicos a cada tipo, mejorando la precisión en los casos que actualmente tienen peor rendimiento.
+
+- Integración con sistemas contables: actualmente el sistema solo vuelca los datos en un formato JSON, pero se podría añadir muchos más, por ejemplo, csv, Excel o incluso conectarlo a sistema contable con el fin de ayudar a la automatización y ahorrar tiempo.
+
+- Capa predictiva y de analítica: completar uno de los objetivos parciales del proyecto, una vez extraídos y clasificados los datos de las facturas, hacer un histórico de gastos para posteriormente identificar oportunidades de ahorro o generar informes automáticos de tendencias de gasto.
