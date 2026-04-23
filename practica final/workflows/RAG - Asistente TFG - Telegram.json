@@ -1,0 +1,241 @@
+{
+  "name": "RAG - Asistente TFG - Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "# Rol\nEres un asistente virtual especializado en el Trabajo Fin de Grado de Álvaro García-Calderón Huerta, titulado \"Desarrollo de software para extracción automática de datos de facturas empresariales\". Tu misión es responder preguntas técnicas y conceptuales sobre el TFG.\n\n# Tareas\n- Usar SIEMPRE la herramienta \"buscar_documentacion\" (Pinecone) antes de responder cualquier pregunta sobre el TFG\n- Proporcionar respuestas precisas y contextualizadas basadas en el contenido recuperado\n- Cuando sea relevante, indicar en qué capítulo o sección del TFG aparece la información (Introducción, Estado de la cuestión, Metodología, Desarrollo, Conclusiones, Glosario o Anexos)\n- Si el usuario pregunta por cifras, modelos o métricas concretas, buscar los datos exactos en la documentación antes de responder\n\n# Restricciones\n- SOLO responder con información que esté en la documentación del TFG\n- Si la información NO está en los documentos, responder exactamente: \"No dispongo de esa información en el TFG. ¿Quieres que lo reformule o que busque un tema relacionado?\"\n- NO inventar cifras, métricas, nombres de empresas, modelos ni tecnologías que no aparezcan en el TFG\n- NO responder preguntas que no estén relacionadas con el TFG o su contenido\n- Si el usuario saluda o hace una pregunta genérica, responde brevemente y sugiere temas sobre los que puedes responder\n\n# Formato\n- Respuestas claras, concisas y técnicamente precisas\n- Usa viñetas o listas numeradas cuando enumeres varios puntos\n- Cita datos concretos entre comillas o con formato numérico cuando vengan del documento\n- Si mencionas un modelo o empresa, hazlo con el nombre tal cual aparece en el TFG (Claude Sonnet 4.6, GPT-4o, Gemini 2.5 Flash, GONJARA S.L., IAG S.L.L.)\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        16,
+        -256
+      ],
+      "id": "9660a13d-ab36-4c29-aff8-724bf290dcb9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -176,
+        -256
+      ],
+      "id": "dc515f8e-8880-4f7a-9622-b62379e18c92",
+      "name": "Telegram Trigger",
+      "webhookId": "e4bf3911-65a5-4347-ba09-deb13a9c2ac2",
+      "credentials": {
+        "telegramApi": {
+          "id": "qh98wmU1zma1E7W3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        368,
+        -256
+      ],
+      "id": "f49e0c4e-3403-4c57-a90f-489baa75d861",
+      "name": "Send a text message",
+      "webhookId": "38d530b2-a57e-4eb8-bf0f-6a179b37e4a2",
+      "credentials": {
+        "telegramApi": {
+          "id": "qh98wmU1zma1E7W3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        112,
+        0
+      ],
+      "id": "bd3ab2d0-e0ec-4282-b5d1-9dd5b46a74c4",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "rbyHhv7hDqtmEZRx",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Busca información en el contenido del Trabajo Fin de Grado (TFG) de Álvaro García-Calderón titulado \"Desarrollo de software para extracción automática de datos de facturas empresariales\". Usa esta herramienta para responder preguntas sobre el sistema desarrollado (OCR + LLM), los modelos evaluados (Claude, GPT-4o, Gemini, Regex), los casos de estudio (GONJARA S.L. y IAG), las métricas de precisión, las tecnologías utilizadas, el pipeline de procesamiento, las conclusiones y cualquier otro aspecto del TFG.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "asistente-tfg",
+          "mode": "list",
+          "cachedResultName": "asistente-tfg"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        256,
+        0
+      ],
+      "id": "36739115-6401-4b31-a5b0-df4ef2114c12",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "bHZNC7cVaN4YSZF3",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        208
+      ],
+      "id": "cfa182e8-e625-4811-861a-4451f3441839",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "qJNeu2JVcnMjxa5b",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        -48
+      ],
+      "id": "23172f2e-c73c-44f4-8330-23ecfb672fe7",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "qJNeu2JVcnMjxa5b",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "cc372439-e6aa-4e95-a465-6da35a10e04a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9cfb87fc48162a94c48c85236810482c8cde3400c950f38f885f1fd9f2bdc742"
+  },
+  "id": "5KPrrmsImiOUoouY",
+  "tags": []
+}
