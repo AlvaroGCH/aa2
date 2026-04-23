@@ -1,0 +1,137 @@
+{
+  "name": "MCP Server - Asistente TFG",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "ef0b6968-53b5-4883-8885-d2491cdbba0c"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "600eeac2-4f62-4a3e-920d-ee6c5e577a07",
+      "name": "MCP Server Trigger",
+      "webhookId": "ef0b6968-53b5-4883-8885-d2491cdbba0c"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -80,
+        464
+      ],
+      "id": "811acca4-34e7-4142-9e8e-ea796c23d20c",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "qJNeu2JVcnMjxa5b",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Busca información en el Trabajo Fin de Grado de Álvaro García-Calderón sobre extracción automática de datos de facturas empresariales con OCR + LLMs. Úsala para responder preguntas sobre: modelos evaluados (Claude Sonnet 4.6, GPT-4o, Gemini 2.5 Flash, Regex), casos de estudio (GONJARA S.L., IAG S.L.L.), métricas (Accuracy, Precision, Recall, F1-Score), pipeline de procesamiento, tecnologías utilizadas (Python, Tesseract, Pinecone), decisiones técnicas, conclusiones y líneas futuras. Pasa la consulta del usuario como 'query'.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "asistente-tfg",
+          "mode": "list",
+          "cachedResultName": "asistente-tfg"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        256
+      ],
+      "id": "c597b6ae-4bdf-404d-9607-94e178a2eee6",
+      "name": "search_tfg",
+      "credentials": {
+        "pineconeApi": {
+          "id": "bHZNC7cVaN4YSZF3",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Envía un mensaje de texto por Telegram al propietario del asistente (Álvaro García-Calderón). Usa esta tool cuando el usuario pida enviar, mandar, notificar o comunicar algo por Telegram. Solo requiere el parámetro 'text' con el contenido del mensaje. El destinatario es siempre el mismo.",
+        "chatId": "=7348449388",
+        "text": "={{ $fromAI(\"text\", \"The text message to send to Telegram\", \"string\") }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        256
+      ],
+      "id": "05c49df0-7fcc-4148-82d6-dce6ba10355a",
+      "name": "send_telegram_message",
+      "webhookId": "f56c63a7-5a34-4f11-a56f-fe50cf6f8a13",
+      "credentials": {
+        "telegramApi": {
+          "id": "qh98wmU1zma1E7W3",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "search_tfg",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_tfg": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_telegram_message": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ac26060b-8920-47c2-9be7-15f5d9c1ed22",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9cfb87fc48162a94c48c85236810482c8cde3400c950f38f885f1fd9f2bdc742"
+  },
+  "id": "6IAPOChCdhV7a04B",
+  "tags": []
+}
