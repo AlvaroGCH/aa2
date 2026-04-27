@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "tfg-asistente": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://TU-INSTANCIA.app.n8n.cloud/mcp/TU-PATH-UUID"
+      ]
+    }
+  }
+}

@@ -88,7 +88,7 @@ El sistema tiene una **base de conocimiento compartida** (Pinecone) accesible de
 
 ### Cliente MCP
 
-**Claude Desktop** se conecta al servidor MCP de n8n mediante el paquete `mcp-remote` (que actúa como puente entre el transporte stdio local de Claude Desktop y el endpoint HTTP del MCP Server de n8n Cloud). La configuración vive en `claude_desktop_config.json`.
+**Claude Desktop** se conecta al servidor MCP de n8n mediante el paquete `mcp-remote` (que actúa como puente entre el transporte stdio local de Claude Desktop y el endpoint HTTP del MCP Server de n8n Cloud). La configuración vive en `claude_desktop_config.json` (Se ha añadido `claude_desktop_config.example.json` como ejemplo de configuración).
 
 ---
 
